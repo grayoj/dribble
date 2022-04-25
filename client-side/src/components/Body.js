@@ -1,25 +1,32 @@
 import React, { useState, useEffect } from "react";
 import logo from "./logo.png";
-import { ethers }from "ethers";
-import { use } from "chai";
+const ethers = require("ethers");
 
 function Body() {
     const [greet, setGreet] = useState('');
+    const [balance, setBalance] = useState('');
     const [depositValue, setDepositValue] = useState('');
     const [greetingValue, setGreetingValue] = useState('');
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner()
+    const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
     
     useEffect(() => {
+
         const connectWallet = async () => {
             await provider.send("eth_requestAccounts", []);
-
-            const getBalance = async () => {
-             
-            }
         }
+            const getBalance = async () => {
+              const balance = await provider.getBalance("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266")
+              const balanceFormatted = ethers.utils.formatEther(balance)
+              setBalance(balanceFormatted)
+            }
+        
         connectWallet()
+        .catch(console.error);
+
+        getBalance()
         .catch(console.error);
     })
 
@@ -44,8 +51,8 @@ function Body() {
   return (
     <main>
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h2 className="text-center">Hello, There</h2>
-        <p className="text-center">Your Contract-Balance</p>
+        <h2 className="text-center">Hello There</h2>
+        <p className="text-center">Your Contract-Balance: {balance}</p>
         <div className="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md w-full space-y-8">
             <div>
