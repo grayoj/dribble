@@ -4,17 +4,67 @@ const ethers = require("ethers");
 
 function Body() {
     const [greet, setGreet] = useState('');
-    const [balance, setBalance] = useState('');
-    const [depositValue, setDepositValue] = useState('');
+    const [balance, setBalance] = useState();
+    const [depositValue, setDepositValue] = useState(0);
     const [greetingValue, setGreetingValue] = useState('');
 
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner()
     const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+
+    const ABI = [
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_greeting",
+            "type": "string"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "greet",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "",
+            "type": "string"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_greeting",
+            "type": "string"
+          }
+        ],
+        "name": "setGreeting",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
+
+    // The Contract object
+    const contract = new ethers.Contract(contractAddress, ABI, signer);
     
     useEffect(() => {
 
-        const connectWallet = async () => {
+        const requestAccount = async () => {
             await provider.send("eth_requestAccounts", []);
         }
             const getBalance = async () => {
@@ -22,11 +72,20 @@ function Body() {
               const balanceFormatted = ethers.utils.formatEther(balance)
               setBalance(balanceFormatted)
             }
+
+        const getGreeting = async() => {
+          const greeting = await contract.greet();
+          setGreet(greeting);
+        }
         
-        connectWallet()
+
+        requestAccount()
         .catch(console.error);
 
         getBalance()
+        .catch(console.error);
+
+        getGreeting()
         .catch(console.error);
     })
 
@@ -38,21 +97,28 @@ function Body() {
         setGreetingValue(e.target.value);
     }
 
-    const handleDepositSubmit = (e) => {
+    const handleDepositSubmit = async (e) => {
         e.preventDefault();
-        console.log(depositValue)
+        const ethValue = ethers.utils.parseEther(depositValue)
+        const deposit = await contract.deposit({ value: ethValue})
+        await deposit.wait();
+        const balance = await provider.getBalance(contractAddress)
+        setBalance(ethers.utils.formatEther(balance));
     }
 
-    const handleGreetingSubmit = (e) => {
+    const handleGreetingSubmit = async (e) => {
         e.preventDefault();
-        console.log(greetingValue)
+        const greetingUpdate = await contract.setGreeting(greetingValue);
+        await greetingUpdate.wait();
+        setGreet(greetingValue);
+        setGreetingValue("");
     }
 
   return (
     <main>
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h2 className="text-center">Hello There</h2>
-        <p className="text-center">Your Contract-Balance: {balance}</p>
+        <h3 className="text-center">Gerald's wallet</h3>
+        <p className="text-center">Your Contract-Balance: {balance} ETH</p>
         <div className="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md w-full space-y-8">
             <div>
@@ -74,7 +140,7 @@ function Body() {
                     id="Change"
                     name="Change"
                     type="Change"
-                    onChange={handleDepositChange} value={depositValue}
+                    onChange={handleDepositChange} value={greetingValue}
                     required
                     className="appearance-none rounded-none relative block
                   w-full px-3 py-2 border border-gray-300
@@ -115,8 +181,8 @@ function Body() {
                     id="number"
                     name="number"
                     type="number"
-                    onChange={handleGreetingChange}
-                    value={greetingValue}
+                    onChange={handleDepositSubmit}
+                    value={depositValue}
                     required
                     className="appearance-none rounded-none relative block
                   w-full px-3 py-2 border border-gray-300
